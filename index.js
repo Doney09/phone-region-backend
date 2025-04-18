@@ -19,7 +19,13 @@ app.get('/api/lookup', async (req, res) => {
   console.log("🔍 Searching Phonemore:", searchUrl);
 
   try {
-    const searchPage = await axios.get(searchUrl);
+    const searchPage = await axios.get(searchUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        'Accept-Language': 'en-US,en;q=0.9'
+      }
+    });
+
     const $ = cheerio.load(searchPage.data);
 
     const firstResultLink = $('.card-device a').first().attr('href');
@@ -33,13 +39,18 @@ app.get('/api/lookup', async (req, res) => {
     const deviceUrl = `https://www.phonemore.com${firstResultLink}`;
     console.log("📄 Visiting device page:", deviceUrl);
 
-    const devicePage = await axios.get(deviceUrl);
-    const $$ = cheerio.load(devicePage.data);
+    const devicePage = await axios.get(deviceUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+        'Accept-Language': 'en-US,en;q=0.9'
+      }
+    });
 
+    const $$ = cheerio.load(devicePage.data);
     const regionText = $$('.table-carriers').text() || $$('.bands-box .card-header').text();
     console.log("🌍 Region text snippet:", regionText.trim().slice(0, 150));
 
-    // 🧪 Mock fallback region data for testing
+    // 🧪 Use mock region data for now
     const mockRegions = [
       { region: "North America", country_codes: ["US", "CA"] },
       { region: "Europe", country_codes: ["UK", "DE", "FR"] },
@@ -54,7 +65,7 @@ app.get('/api/lookup', async (req, res) => {
 
   } catch (err) {
     console.error("💥 ERROR while scraping:", err.message);
-    res.status(500).json({ error: 'Failed to fetch from Phonemore' });
+    return res.status(500).json({ error: 'Failed to fetch from Phonemore' });
   }
 });
 
