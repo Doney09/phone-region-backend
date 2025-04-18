@@ -1,6 +1,4 @@
 import express from 'express';
-import axios from 'axios';
-import * as cheerio from 'cheerio';
 import cors from 'cors';
 
 const app = express();
@@ -9,66 +7,27 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 
 app.get('/api/lookup', async (req, res) => {
-  const { brand, model } = req.query;
+  const { brand, model, modelNumber } = req.query;
 
   if (!brand || !model) {
     return res.status(400).json({ error: 'Brand and Model are required' });
   }
 
-  const searchUrl = `https://www.phonemore.com/search/?q=${encodeURIComponent(brand + ' ' + model)}`;
-  console.log("🔍 Searching Phonemore:", searchUrl);
+  console.log(`📲 Lookup requested for ${brand} ${model} ${modelNumber || ''}`);
 
-  try {
-    const searchPage = await axios.get(searchUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-        'Accept-Language': 'en-US,en;q=0.9'
-      }
-    });
+  const mockRegions = [
+    { region: "North America", country_codes: ["US", "CA"] },
+    { region: "Europe", country_codes: ["UK", "DE", "FR"] },
+    { region: "Asia", country_codes: ["IN", "CN", "JP"] }
+  ];
 
-    const $ = cheerio.load(searchPage.data);
-
-    const firstResultLink = $('.card-device a').first().attr('href');
-    console.log("🔗 First result link:", firstResultLink);
-
-    if (!firstResultLink) {
-      console.log("❌ No result found on search page.");
-      return res.json({ brand, model, release_regions: [] });
-    }
-
-    const deviceUrl = `https://www.phonemore.com${firstResultLink}`;
-    console.log("📄 Visiting device page:", deviceUrl);
-
-    const devicePage = await axios.get(deviceUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-        'Accept-Language': 'en-US,en;q=0.9'
-      }
-    });
-
-    const $$ = cheerio.load(devicePage.data);
-    const regionText = $$('.table-carriers').text() || $$('.bands-box .card-header').text();
-    console.log("🌍 Region text snippet:", regionText.trim().slice(0, 150));
-
-    // 🧪 Use mock region data for now
-    const mockRegions = [
-      { region: "North America", country_codes: ["US", "CA"] },
-      { region: "Europe", country_codes: ["UK", "DE", "FR"] },
-      { region: "Asia", country_codes: ["IN", "CN", "JP"] }
-    ];
-
-    return res.json({
-      brand,
-      model,
-      release_regions: mockRegions
-    });
-
-  } catch (err) {
-    console.error("💥 ERROR while scraping:", err.message);
-    return res.status(500).json({ error: 'Failed to fetch from Phonemore' });
-  }
+  return res.json({
+    brand,
+    model,
+    release_regions: mockRegions
+  });
 });
 
 app.listen(PORT, () => {
-  console.log(`✅ Phonemore API running at http://localhost:${PORT}`);
+  console.log(`✅ API (dummy mode) running at http://localhost:${PORT}`);
 });
