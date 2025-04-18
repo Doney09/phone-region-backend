@@ -23,40 +23,37 @@ app.get('/api/lookup', async (req, res) => {
     const $ = cheerio.load(searchPage.data);
 
     const firstResultLink = $('.card-device a').first().attr('href');
+    console.log("🔗 First result link:", firstResultLink);
+
     if (!firstResultLink) {
-      console.log("❌ No match found on Phonemore.");
-      return res.json({
-        brand,
-        model,
-        release_regions: []
-      });
+      console.log("❌ No result found on search page.");
+      return res.json({ brand, model, release_regions: [] });
     }
 
     const deviceUrl = `https://www.phonemore.com${firstResultLink}`;
-    console.log("🔗 Visiting device page:", deviceUrl);
+    console.log("📄 Visiting device page:", deviceUrl);
 
     const devicePage = await axios.get(deviceUrl);
     const $$ = cheerio.load(devicePage.data);
 
-    // Attempt to extract carrier/region info
     const regionText = $$('.table-carriers').text() || $$('.bands-box .card-header').text();
-    console.log("🌍 Raw region text:", regionText.trim().slice(0, 100));
+    console.log("🌍 Region text snippet:", regionText.trim().slice(0, 150));
 
-    // Fallback mock regions
+    // 🧪 Mock fallback region data for testing
     const mockRegions = [
       { region: "North America", country_codes: ["US", "CA"] },
       { region: "Europe", country_codes: ["UK", "DE", "FR"] },
       { region: "Asia", country_codes: ["IN", "CN", "JP"] }
     ];
 
-    res.json({
+    return res.json({
       brand,
       model,
       release_regions: mockRegions
     });
 
   } catch (err) {
-    console.error("💥 Scrape failed:", err.message);
+    console.error("💥 ERROR while scraping:", err.message);
     res.status(500).json({ error: 'Failed to fetch from Phonemore' });
   }
 });
